@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page.title | default: site.title }}</title>
+  <link rel="stylesheet" href="{{ '/assets/main.css' | relative_url }}">
+</head>
+<body>
+  <header class="site-header" role="banner">
+    <div class="wrapper">
+      <a class="site-title" rel="author" href="{{ '/' | relative_url }}">{{ site.title }}</a>
+    </div>
+  </header>
+  <main class="page-content" aria-label="Contenido">
+    <div class="wrapper">
+      <article class="post">
+        <div class="post-content">
+          {{ content }}
+        </div>
+      </article>
+    </div>
+  </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const cambios = {
+        'Paz': { E3: '75%', E4: 'Pendiente' },
+        'Félix': { E3: '75%' },
+        'Alexandra': { E3: '75%' }
+      };
+      document.querySelectorAll('table').forEach(function(table) {
+        table.querySelectorAll('tbody tr').forEach(function(row) {
+          const cells = row.querySelectorAll('td');
+          if (!cells.length) return;
+          const nombre = cells[0].textContent.trim();
+          const c = cambios[nombre];
+          if (!c) return;
+          if (c.E3 && cells[3]) cells[3].textContent = c.E3;
+          if (c.E4 && cells[4]) {
+            cells[4].innerHTML = c.E4 === 'Pendiente' ? '<strong>Pendiente</strong>' : c.E4;
+          }
+        });
+      });
+      const post = document.querySelector('.post-content');
+      const paragraphs = post ? post.querySelectorAll('p') : [];
+      paragraphs.forEach(function(p) {
+        if (p.textContent.includes('No presentada') && !document.getElementById('leyenda-pendiente')) {
+          const span = document.createElement('span');
+          span.id = 'leyenda-pendiente';
+          span.innerHTML = '<br><strong>Pendiente</strong> = evidencia todavía por completar.';
+          p.appendChild(span);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
