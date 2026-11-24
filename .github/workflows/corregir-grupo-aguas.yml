@@ -1,0 +1,26 @@
+name: "Portafolio 24 · Corregir grupo Aguas"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/corregir-grupo-aguas.yml"
+
+permissions:
+  contents: write
+  jobs:
+    corregir:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v6
+        - name: Aplicar correcciones
+          run: |
+            sed -i 's/| Paz | 85% | 100% | 35% | 10% |/| Paz | 85% | 100% | 75% | **Pendiente** |/' index.md
+            sed -i 's/| Félix | 85% | 100% | 35% | 10% |/| Félix | 85% | 100% | 75% | 10% |/' index.md
+            sed -i 's/| Alexandra | 85% | 100% | 35% | 10% |/| Alexandra | 85% | 100% | 75% | 10% |/' index.md
+            grep -qF '**Pendiente** = evidencia todavía por completar.' index.md || sed -i '/^\*\*No presentada\*\* = sin evidencia válida registrada\.$/a **Pendiente** = evidencia todavía por completar.' index.md
+          git config user.name "Portafolio 24 Bot"
+ git config user.email "actions@users.noreply.github.com"
+          git add index.md
+ git commit -m "Actualizar grupo Aguas y estado de Paz"
+          git push
