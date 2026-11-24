@@ -1,0 +1,104 @@
+name: "Portafolio 24 · Actualizar evidencias"
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  actualizar:
+    if: startsWith(github.event.issue.title, '[PORTAFOLIO24]')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Recuperar repositorio
+        uses: actions/checkout@v6
+
+      - name: Aplicar cambios al seguimiento
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          python - <<'PY'
+          import os, re
+          from pathlib import Path
+
+          path = Path("index.md")
+          text = path.read_text(encoding="utf-8")
+          lines = text.splitlines()
+
+          updates = []
+          for raw in os.environ.get("ISSUE_BODY","").splitlines():
+              raw = raw.strip()
+              if not raw or raw.startswith("#"):
+                  continue
+              parts = [p.strip() for p in raw.split("|")]
+              if len(parts) != 3:
+                  continue
+              name, evidence, value = parts
+              if evidence not in {"E1","E2","E3","E4"}:
+                  continue
+              updates.append((name,evidence,value))
+
+          header_index = None
+          for i, line in enumerate(lines):
+              if line.strip() == "| Estudiante | E1 | E2 | E3 | E4 |":
+                  header_index = i
+                  break
+          if header_index is None:
+              raise SystemExit("No se encontró la tabla.")
+
+          def fmt(value):
+              if value in {"Pendiente","No presentada"}:
+                  return f"**{value}**"
+              if re.fullmatch(r"\d{1,3}%?", value):
+                  return value if value.endswith("%") else value + "%"
+              return value
+
+          changed = []
+          for name,evidence,value in updates:
+              col = {"E1":1,"E2":2,"E3":3,"E4":4}[evidence]
+              found = False
+              for i,line in enumerate(lines):
+                  if not line.startswith("|"):
+                      continue
+                      cells = [c.strip() for c in line.strip().strip("|").split("|")]
+                      if len(cells) >= 5 and cells[0] == name:
+                      cells[col] = fmt(value)
+                      lines[i] = "| " + " | ".join(cells[:5]) + " |"
+                      changed.append(f"{name} {evidence} → {value}")
+                      found = True
+                      break
+                  if not found:
+                  raise SystemExit(f"No se encontró estudiante: {name}")
+
+          legend ="**Pendiente** = evidencia todavía por completar."
+          if any(v == "Pendiente" for _,_,v in updates) and legend not in lines:
+              anchor = "**No presentada** = sin evidencia válida registrada."
+              try:
+                  pos = lines.index(anchor)
+                  lines.insert(pos+1, legend)
+              except ValueError:
+                  pass
+
+          path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          print("\n".join(changed))
+          PY
+
+      - name: Guardar cambios
+        run: |
+          git config user.name "Portafolio 24 Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.md
+          git diff --cached --quiet && exit 0
+          git commit -m "Actualizar evidencias Portafolio 24 (#${{ github.event.issue.number }})"
+          git push
+
+      - name: Cerrar solicitud
+        env:
+          GH_TOKEN: ${{ github.token }}
+          run: |
+          gh issue comment "${{ github.event.issue.number }}" --body "Actualización aplicada al seguimiento y enviada a GitHub Pages."
+          gh issue close "${{ github.event.issue.number }}"
+ to complete the goal
